@@ -4,6 +4,10 @@ final float scale = 0.666;
 class SolariDigit {
   final int digitHeight = 65;
   final int digitWidth = 50;
+  
+  // PI/ms
+  final float flipVelocity = 12.0 / 1000.0;
+  
   PFont digitFont;
   
   // ASCII code of the digit currently showing, or about to show (if a flip is in progress)
@@ -52,7 +56,7 @@ class SolariDigit {
     drawDigit(topImage, digit);
   }
   
-  void flipStep() {
+  void flipStep(int ms) {
     if (angle == 0)
       advanceDigit();
       
@@ -70,18 +74,18 @@ class SolariDigit {
     }
     popMatrix();
     
-    angle += 0.1;
+    angle += ms * flipVelocity;
     if (angle > 1) {
       angle = 0;
     }
   }
   
-  void display() {
+  void display(int ms) {
     
     if (digit == seekDigit && angle == 0)
       image(topImage, -digitWidth/2, -digitHeight/2);
     else
-      flipStep();
+      flipStep(ms);
   }
 }
 
@@ -107,11 +111,11 @@ class SolariDigitLine {
     }
   }
   
-  void display() {
+  void display(int ms) {
     for (int i=0; i<length; i++) {
       pushMatrix();
       translate(52 * i, 0);
-      digits[i].display();
+      digits[i].display(ms);
       popMatrix();
     }
   }
@@ -121,6 +125,7 @@ class SolariDigitLine {
 
 
 SolariDigitLine ln;
+int lastDraw;
 
 void setup() {
   frameRate(60);
@@ -133,7 +138,11 @@ void setup() {
   
   ln = new SolariDigitLine(20);
   ln.setText("Hello World!");
+  
+  lastDraw = millis();
 }
+
+
 
 void draw() {
   translate(50, 50);
@@ -141,10 +150,9 @@ void draw() {
   
   background(100);
   
-  stroke(0);
-  strokeWeight(0.1);
-  ln.display();
+  ln.display(millis() - lastDraw);
 
+  lastDraw = millis();
 }
 
 
