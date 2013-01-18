@@ -1,7 +1,7 @@
 final float scale = 0.666;
 
 
-class AirportDigit {
+class SolariDigit {
   final int digitHeight = 65;
   final int digitWidth = 50;
   PFont digitFont;
@@ -19,7 +19,7 @@ class AirportDigit {
   PGraphics topImage, bottomImage;
 
 
-  AirportDigit() { 
+  SolariDigit() { 
     digitFont = createFont("Helvetica", 50);
     topImage = createGraphics(digitWidth, digitHeight);
     drawDigit(topImage, digit);
@@ -77,7 +77,6 @@ class AirportDigit {
   }
   
   void display() {
-    background(100);
     
     if (digit == seekDigit && angle == 0)
       image(topImage, -digitWidth/2, -digitHeight/2);
@@ -87,10 +86,44 @@ class AirportDigit {
 }
 
 
-AirportDigit dig;
+
+
+class SolariDigitLine {
+  int length;
+  SolariDigit[] digits;
+  
+  SolariDigitLine(int l) { 
+    length = l;
+    digits = new SolariDigit[length];
+    for (int i=0; i<length; i++) {
+      digits[i] = new SolariDigit();
+    }
+  }
+  
+  void setText(String str) {
+    char[] chars = str.toUpperCase().toCharArray();
+    for (int i=0; i<min(chars.length, length); i++) {
+      digits[i].seekDigit(chars[i]);
+    }
+  }
+  
+  void display() {
+    for (int i=0; i<length; i++) {
+      pushMatrix();
+      translate(52 * i, 0);
+      digits[i].display();
+      popMatrix();
+    }
+  }
+
+}
+
+
+
+SolariDigitLine ln;
 
 void setup() {
-  frameRate(30);
+  frameRate(60);
   
   // Full Size
   //size(1920, 1080, P3D);
@@ -98,21 +131,20 @@ void setup() {
   // Half Size
   size(int(1920 * scale), int(1080 * scale), P3D);
   
-  dig = new AirportDigit();
+  ln = new SolariDigitLine(20);
+  ln.setText("Hello World!");
 }
 
 void draw() {
-  translate(width*2/3, height*2/3);
+  translate(50, 50);
   scale(scale);
   
   background(100);
   
   stroke(0);
   strokeWeight(0.1);
-  dig.display();
+  ln.display();
 
 }
 
-void keyPressed() {
-  dig.seekDigit(key); 
-}
+
