@@ -10,6 +10,8 @@ final PFont flapFont = createFont("Helvetica", 50);
 
 PGraphics[] flaps = new PGraphics[highASCII - lowASCII + 1];
 
+int digitsAnimating = 0;
+
 
 void createflaps() {
   //Populates the flaps array
@@ -17,8 +19,8 @@ void createflaps() {
   for (int i=0; i < highASCII - lowASCII + 1; i++) {
     flaps[i] = createGraphics(flapWidth, flapHeight);
     flaps[i].beginDraw();
-    flaps[i].background(0);
-    flaps[i].fill(255);
+    flaps[i].background(10);
+    flaps[i].fill(225, 255, 50);
     flaps[i].textAlign(CENTER, CENTER);
     flaps[i].textFont(flapFont);
     flaps[i].text((char)(i + lowASCII), flapWidth>>1, flapHeight>>1);
@@ -35,7 +37,9 @@ PGraphics getFlap(byte c) {
 class SolariDigit {
   
   // PI/ms
-  final float flipVelocity = 16.0 / 1000.0;
+  final float flipVelocity = 12.0 / 1000.0;
+
+  final float misfireProbability = 0.1;
   
   // ASCII code of the digit currently showing, or about to show (if a flip is in progress)
   byte digit = lowASCII;
@@ -70,9 +74,14 @@ class SolariDigit {
   }
   
   void flipStep(int ms) {
-    if (angle == 0)
+    if (angle == 0) {
+      if (random(1) < misfireProbability * digitsAnimating) {
+        image(topFlap, -flapWidth>>1, -flapHeight>>1);
+        return;
+      }
       advanceDigit();
-      
+    }
+    
     image(topFlap.get(0, 0, flapWidth, flapHeight>>1), -flapWidth>>1, -flapHeight>>1);
     image(bottomFlap.get(0, flapHeight>>1, flapWidth, flapHeight>>1), -flapWidth>>1, 0); 
     
@@ -91,14 +100,16 @@ class SolariDigit {
     if (angle > 1) {
       angle = 0;
     }
+    
+    digitsAnimating++;
   }
   
   void display(int ms) {
     
-    if (digit == seekDigit && angle == 0)
-      image(topFlap, -flapWidth>>1, -flapHeight>>1);
-    else
+    if (angle > 0 || digit != seekDigit)
       flipStep(ms);
+    else
+      image(topFlap, -flapWidth>>1, -flapHeight>>1);
   }
 }
 
@@ -168,8 +179,8 @@ Status getTweet() {
   }
 }
 
-int nColumns = 32;
-int nLines = 4;
+int nColumns = 34;
+int nLines = 8;
 SolariDigitLine[] lines = new SolariDigitLine[nLines];
 int lastDraw;
 
@@ -207,22 +218,29 @@ void setup() {
 }
 
 
-int nextTwitterSearch = 20000;
+int nextTwitterSearch = 8000;
 
 void draw() {
-  translate(50, 50);
+  translate(34, 300);
   scale(scale);
+  directionalLight(150, 150, 150, .5, 0, -1);
+  ambientLight(100, 100, 100);
+  ambient(150, 150, 150);
   
-  background(100);
+  background(50);
   
   if (millis() > nextTwitterSearch) {
-    String str = getTweet().getText();
-    println(str);
-    for (int i=0; i<nLines; i++) {
-      lines[i].setText(getMultilinePartition(str, i));
+    if (digitsAnimating == 0) {
+      String str = getTweet().getText();
+      println(str);
+      for (int i=0; i<nLines; i++) {
+        lines[i].setText(getMultilinePartition(str, i));
+      }
     }
-    nextTwitterSearch = millis() + 20000;
+    nextTwitterSearch = millis() + 8000;
   }
+  
+  digitsAnimating = 0;
   
   for (int i=0; i<nLines; i++) {
     pushMatrix();
