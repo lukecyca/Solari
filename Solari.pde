@@ -1,17 +1,36 @@
-final float scale = 0.666;
+final float scale = 1;
 
 final int lowASCII = 32;
 final int highASCII = 90;
 
-final int flapHeight = 65;
+final int flapHeight = 57;
 final int flapWidth = 50;
 
-final PFont flapFont = createFont("Helvetica", 50);
+final PFont flapFont = createFont("Helvetica", 46);
 
 PGraphics[] flaps = new PGraphics[highASCII - lowASCII + 1];
 
+PImage titleImg;
+
 int digitsAnimating = 0;
 
+final int maxDigitsAnimating = 17;
+
+// PI/ms
+final float flipVelocity = 9.0 / 1000.0;
+
+final float misfireProbability = 0.2;
+
+final int nColumns = 34;
+final int nLines = 13;
+
+SolariDigitLine[] lines = new SolariDigitLine[nLines];
+
+int lastDraw;
+
+import java.util.List;
+import java.util.Collections;
+import ddf.minim.*;
 
 void createflaps() {
   //Populates the flaps array
@@ -19,7 +38,7 @@ void createflaps() {
   for (int i=0; i < highASCII - lowASCII + 1; i++) {
     flaps[i] = createGraphics(flapWidth, flapHeight);
     flaps[i].beginDraw();
-    flaps[i].background(10);
+    flaps[i].background(40);
     flaps[i].fill(225, 255, 50);
     flaps[i].textAlign(CENTER, CENTER);
     flaps[i].textFont(flapFont);
@@ -35,12 +54,7 @@ PGraphics getFlap(byte c) {
 
 
 class SolariDigit {
-  
-  // PI/ms
-  final float flipVelocity = 12.0 / 1000.0;
 
-  final float misfireProbability = 0.1;
-  
   // ASCII code of the digit currently showing, or about to show (if a flip is in progress)
   byte digit = lowASCII;
   
@@ -53,8 +67,8 @@ class SolariDigit {
   // Buffers for the current (top) digit and the previous (bottom) digit
   PGraphics topFlap, bottomFlap;
 
-
-  SolariDigit() { 
+  SolariDigit() {
+    
     topFlap = getFlap(digit);
     bottomFlap = getFlap(digit);
   }
@@ -75,7 +89,7 @@ class SolariDigit {
   
   void flipStep(int ms) {
     if (angle == 0) {
-      if (random(1) < misfireProbability * digitsAnimating) {
+      if (digitsAnimating > maxDigitsAnimating || random(1) < misfireProbability) {
         image(topFlap, -flapWidth>>1, -flapHeight>>1);
         return;
       }
@@ -91,7 +105,7 @@ class SolariDigit {
       image(bottomFlap.get(0, 0, flapWidth, flapHeight>>1), -flapWidth>>1, -flapHeight>>1);
     }
     else {
-      rotateX(-(angle - 1.0) * PI);
+      rotateX(-(min(angle, 1) - 1.0) * PI);
       image(topFlap.get(0, flapHeight>>1, flapWidth, flapHeight>>1), -flapWidth>>1, 0); 
     }
     popMatrix();
@@ -120,7 +134,7 @@ class SolariDigitLine {
   int length;
   SolariDigit[] digits;
   
-  SolariDigitLine(int l) { 
+  SolariDigitLine(int l) {
     length = l;
     digits = new SolariDigit[length];
     for (int i=0; i<length; i++) {
@@ -168,87 +182,137 @@ void initTwitterSearch() {
   query.setCount(10);
 }
 
-Status getTweet() {
+List<Status> getTweets(int n) {
   try {
     QueryResult result = twitter.search(query);
-    return result.getTweets().get(int(random(result.getCount())));
+    List<Status> tweets = result.getTweets();
+    Collections.shuffle(tweets);
+    return tweets.subList(0, n);
   }
   catch (TwitterException te) {
     println("Couldn't connect: " + te);
-    return null;
+    return Collections.emptyList();
   }
 }
-
-int nColumns = 34;
-int nLines = 8;
-SolariDigitLine[] lines = new SolariDigitLine[nLines];
-int lastDraw;
-
-
-
   
 String getMultilinePartition(String str, int lineNum) {
   return str.substring(min(lineNum * nColumns, str.length()), min((lineNum + 1) * nColumns, str.length()));
 }
 
-void setup() {
-  frameRate(60);
-  
-  // Full Size
-  //size(1920, 1080, P3D);
+void showMerch() {
+  lines[0].setText( "Destination      Flt#      Remarks");
+  lines[1].setText( "");
+  lines[2].setText( "CD               $ 10      On Time");
+  lines[3].setText( "Vinyl            $ 20      On Time");
+  lines[4].setText( "T-Shirt          $ 10      On Time");
+  lines[5].setText( "Luggage Tag      $  5      On Time");
+  lines[6].setText( "Stickers         3/$1      On Time");
+  lines[7].setText( "2 CD Pack        $ 15      Special");
+  lines[8].setText( "CD+T-Shirt       $ 15      Special");
+  lines[9].setText( "Vinyl+T-Shirt    $ 25      Special");
+  lines[10].setText("Buttons          FREE      W/Email");
+  lines[11].setText("");
+  lines[12].setText("        www.sidneyyork.com        ");
+}
 
-  // Half Size
+void showTweets(List<Status> tweets) {
+  lines[0].setText( "Tweet @sidneyyork 2 win free stuff");
+  lines[1].setText( "");
+  lines[2].setText(tweets.get(0).getUser().getName() + " says:");
+  lines[3].setText(getMultilinePartition(tweets.get(0).getText(), 0));
+  lines[4].setText(getMultilinePartition(tweets.get(0).getText(), 1));
+  lines[5].setText(getMultilinePartition(tweets.get(0).getText(), 2));
+  lines[6].setText(getMultilinePartition(tweets.get(0).getText(), 3));
+  lines[7].setText( "");
+  lines[8].setText(tweets.get(1).getUser().getName() + " says:");
+  lines[9].setText(getMultilinePartition(tweets.get(1).getText(), 0));
+  lines[10].setText(getMultilinePartition(tweets.get(1).getText(), 1));
+  lines[11].setText(getMultilinePartition(tweets.get(1).getText(), 2));
+  lines[12].setText(getMultilinePartition(tweets.get(1).getText(), 3));
+  
+  System.out.println(tweets.get(0).getText());
+  System.out.println(tweets.get(1).getText());
+}
+
+
+
+
+
+void setup() {
+  frameRate(45);
+  noiseDetail(4, 0.25);
   size(int(1920 * scale), int(1080 * scale), P3D);
   
   createflaps();
   
+  titleImg = loadImage("title.png");
+  
+  // Init the matrix
   for (int i=0; i<nLines; i++) {
     lines[i] = new SolariDigitLine(nColumns);
   }
   
-  lastDraw = millis();
-  
   initTwitterSearch();
   
-  String str = getTweet().getText();
-  println(str);
-  for (int i=0; i<nLines; i++) {
-    lines[i].setText(getMultilinePartition(str, i));
-  }
+  lastDraw = millis();
 }
 
 
-int nextTwitterSearch = 8000;
+
+List<Status> tweets;
+int nextFramerateDisplay = 5000;
+int nextScreenChange = 0;
+int nextScreen = 0;
 
 void draw() {
-  translate(34, 300);
-  scale(scale);
-  directionalLight(150, 150, 150, .5, 0, -1);
-  ambientLight(100, 100, 100);
+  directionalLight(255, 255, 255, .5, 1, -.5);
+  lightSpecular(255, 255, 255);
+  ambientLight(150, 150, 150);
   ambient(150, 150, 150);
   
-  background(50);
+  background(20);
   
-  if (millis() > nextTwitterSearch) {
-    if (digitsAnimating == 0) {
-      String str = getTweet().getText();
-      println(str);
-      for (int i=0; i<nLines; i++) {
-        lines[i].setText(getMultilinePartition(str, i));
-      }
+  scale(scale);
+  
+  pushMatrix();
+  translate(258, 30);
+  image(titleImg, 0, 0);
+  popMatrix();
+  
+  if (millis() > nextScreenChange) {
+    if (nextScreen == 0) {
+      showMerch();
+    } 
+    if (nextScreen == 1) {
+      tweets = getTweets(4);
+      showTweets(tweets.subList(0, 2));
     }
-    nextTwitterSearch = millis() + 8000;
+    if (nextScreen == 2) {
+      showTweets(tweets.subList(2, 4));
+    }
+    
+    nextScreen = (nextScreen+1) % 3;
+    nextScreenChange = millis() + 80000;
   }
   
-  digitsAnimating = 0;
+  if (millis() > nextFramerateDisplay) {
+    println(frameRate);
+    nextFramerateDisplay = millis() + 5000;
+  }
   
+  
+  // Animate the matrix
+  pushMatrix();
+  digitsAnimating = 0;
+  translate(51, 293);
   for (int i=0; i<nLines; i++) {
     pushMatrix();
     translate(0, flapHeight * 1.1 * i);
     lines[i].display(millis() - lastDraw);
     popMatrix();
   }
+  popMatrix();
+  
   lastDraw = millis();
 }
-
 
